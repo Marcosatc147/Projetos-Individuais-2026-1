@@ -3,7 +3,11 @@ from typing import List, Optional
 
 class DadosOperacionaisEmpresa(BaseModel):
     nome: str = Field(
-        description="O nome oficial ou ticker da empresa de capital aberto (ex: MRV, Tenda, Direcional). Formate sempre em letras MAIÚSCULAS."
+    description=(
+        "O ticker ou nome curto oficial da empresa na B3 (ex: 'MRV', 'CURY', 'TENDA', 'DIRECIONAL'). "
+        "NUNCA inclua sufixos como 'Engenharia', 'S.A.', '&CO' ou qualquer outro complemento. "
+        "Retorne APENAS o ticker em letras MAIÚSCULAS."
+        )
     )
     periodo_reportado: str = Field(
         description="O período fiscal principal (trimestre) a que se refere o relatório (ex: '3T25', '1T26', '4T24'). Identifique isso na capa do documento."
