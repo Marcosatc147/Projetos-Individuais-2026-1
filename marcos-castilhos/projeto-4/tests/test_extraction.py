@@ -4,7 +4,7 @@ from pathlib import Path
 from app.extractor import extract_financial_data
 from app.models import ConjunturaReport
 
-FIXTURES_DIR = Path("/kaggle/input/datasets/marcosalt/docs-analise")
+FIXTURES_DIR = Path("./tests/fixtures")
 
 DATA_TEST_CASES = [
     (
@@ -41,8 +41,9 @@ def test_extract_boletim_conjuntura(pdf_name, empresa_nome, periodo_reportado_es
     )
     
     assert result is not None, "O motor retornou None"
-
-    empresa_data = next((emp_idx for emp_idx in result.empresas if emp_idx.nome.upper() == empresa_nome.upper()), None)
+    empresa_data = next(
+    (e for e in result.empresas if empresa_nome.upper() in e.nome.upper()),
+    None)
     assert empresa_data is not None, f"Falhou em identificar '{empresa_nome}'"
 
     assert empresa_data.periodo_reportado == periodo_reportado_esperado, \

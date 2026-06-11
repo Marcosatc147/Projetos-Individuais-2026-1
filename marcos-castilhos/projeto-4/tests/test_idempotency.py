@@ -4,7 +4,7 @@ from pathlib import Path
 from app.database import init_db
 from app.pipeline import process_document
 
-FIXTURES_DIR = Path("/kaggle/input/datasets/marcosalt/docs-analise")
+FIXTURES_DIR = Path("./tests/fixtures")
 
 @pytest.fixture
 def test_db():
