@@ -3,6 +3,7 @@ import instructor
 from google import genai
 from pathlib import Path
 from app.models import ConjunturaReport
+from dotenv import load_dotenv
 
 def extract_financial_data(pdf_path: Path | str, trimestre_alvo: str = "Trimestre mais recente reportado") -> ConjunturaReport:
     path_str = str(pdf_path)
@@ -13,18 +14,11 @@ def extract_financial_data(pdf_path: Path | str, trimestre_alvo: str = "Trimestr
 
     MODELO_LLM = "gemini-3.1-flash-lite" 
     
-    # --- SETUP DO CLIENTE ---
+    load_dotenv()  
+
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
-        try:
-            from kaggle_secrets import UserSecretsClient
-            user_secrets = UserSecretsClient()
-            api_key = user_secrets.get_secret("GEMINI_API_KEY")
-        except Exception:
-            pass
-
-    if not api_key:
-        raise ValueError("CRITICAL ERROR: Chave GEMINI_API_KEY não encontrada.")
+        raise ValueError("CRITICAL ERROR: Chave GEMINI_API_KEY não encontrada. Defina no arquivo .env ou como variável de ambiente.")
 
     genai_client = genai.Client(api_key=api_key)
     client = instructor.from_genai(genai_client)
