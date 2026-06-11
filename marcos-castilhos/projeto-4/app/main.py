@@ -1,6 +1,8 @@
 import sqlite3
+import os
 from fastapi import FastAPI, Depends, HTTPException
-
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from app.database import init_db, query_conjuntura
 
 app = FastAPI(
@@ -8,7 +10,6 @@ app = FastAPI(
     description="Serve os dados operacionais das incorporadoras extraídos pelo pipeline UDA.",
     version="1.0.0",
 )
-
 
 # ---------------------------------------------------------------------------
 # Injeção de Dependência — permite mock nos testes
@@ -25,7 +26,6 @@ def get_db():
 # ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
-
 @app.get("/api/conjuntura")
 def get_conjuntura(
     empresa: str,
@@ -63,6 +63,17 @@ def get_conjuntura(
         },
     }
 
+@app.get("/api/pipeline/status")
+def get_pipeline_status(db: sqlite3.Connection = Depends(get_db)):
+    cursor = db.cursor()
+    cursor.execute(
+        "SELECT filename, hash, processed_at FROM processed_files ORDER BY processed_at DESC"
+    )
+    rows = cursor.fetchall()
+    return [
+        {"filename": r["filename"], "hash": r["hash"], "processed_at": r["processed_at"]}
+        for r in rows
+    ]
 
 @app.get("/api/conjuntura/empresas")
 def list_empresas(db: sqlite3.Connection = Depends(get_db)):
@@ -82,3 +93,13 @@ def list_empresas(db: sqlite3.Connection = Depends(get_db)):
         }
         for r in rows
     ]
+
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
+if os.path.isdir("app/static"):
+    app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
+    @app.get("/")
+    def root():
+        return FileResponse("app/static/index.html")
+

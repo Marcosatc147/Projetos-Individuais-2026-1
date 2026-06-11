@@ -50,27 +50,27 @@ log = logging.getLogger(__name__)
 RI_SOURCES = [
     {
         "empresa": "MRV",
-        "url": "https://ri.mrv.com.br/resultados-e-relatorios/central-de-resultados",
+        "url": "https://ri.mrv.com.br/informacoes-financeiras/central-de-resultados",
         "pdf_keyword": "previa",          # substring no href do link (case-insensitive)
     },
     {
         "empresa": "CURY",
-        "url": "https://ri.construtora cury.com.br/central-de-resultados",
+        "url": "https://ri.cury.net/informacoes-aos-investidores/central-de-resultados/",
         "pdf_keyword": "previa",
     },
     {
         "empresa": "TENDA",
-        "url": "https://ri.tenda.com/resultados/central-de-resultados",
-        "pdf_keyword": "press-release",
+        "url": "https://ri.tenda.com/informacoes-financeiras/central-de-resultados",
+        "pdf_keyword": "previa",
     },
     {
         "empresa": "DIRECIONAL",
-        "url": "https://ri.direcional.com.br/central-de-resultados",
+        "url": "https://ri.direcional.com.br/informacoes-financeiras/central-de-resultados/",
         "pdf_keyword": "previa",
     },
     {
         "empresa": "PLANO_E_PLANO",
-        "url": "https://ri.planoplano.com.br/central-de-resultados",
+        "url": "https://ri.planoeplano.com.br/informacoes-financeiras/central-de-resultados/",
         "pdf_keyword": "previa",
     },
 ]
