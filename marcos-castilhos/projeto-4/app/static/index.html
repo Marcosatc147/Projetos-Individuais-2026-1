@@ -1,0 +1,200 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans);font-size:14px;color:var(--color-text-primary)}
+.page{padding:1.5rem 0}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem}
+.topbar h1{font-size:16px;font-weight:500}
+.topbar span{font-size:12px;color:var(--color-text-secondary)}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.25rem;align-items:center}
+.filters label{font-size:12px;color:var(--color-text-secondary);margin-right:2px}
+.filters select{font-size:13px;padding:6px 10px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-primary);cursor:pointer;min-width:110px}
+.filters button{font-size:13px;padding:6px 14px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:transparent;color:var(--color-text-primary);cursor:pointer}
+.filters button:hover{background:var(--color-background-secondary)}
+.section-title{font-size:12px;font-weight:500;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.75rem;margin-top:1.5rem}
+.section-title:first-of-type{margin-top:0}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{font-weight:500;font-size:12px;color:var(--color-text-secondary);text-align:left;padding:8px 12px;border-bottom:0.5px solid var(--color-border-tertiary);white-space:nowrap}
+thead th.num{text-align:right}
+tbody tr{border-bottom:0.5px solid var(--color-border-tertiary)}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--color-background-secondary)}
+tbody td{padding:9px 12px;color:var(--color-text-primary)}
+tbody td.num{text-align:right;font-variant-numeric:tabular-nums}
+tbody td.null{color:var(--color-text-tertiary);text-align:right}
+.badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:var(--border-radius-md)}
+.badge-ok{background:var(--color-background-success);color:var(--color-text-success)}
+.badge-null{background:var(--color-background-secondary);color:var(--color-text-tertiary)}
+.pipeline-table table{font-size:12px}
+.pipeline-table thead th{font-size:11px}
+.pipeline-table tbody td{padding:7px 12px;font-size:12px;color:var(--color-text-secondary)}
+.pipeline-table tbody td.filename{font-family:var(--font-mono);color:var(--color-text-primary);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pipeline-table tbody td.hash{font-family:var(--font-mono);color:var(--color-text-tertiary)}
+.empty{padding:2rem;text-align:center;color:var(--color-text-tertiary);font-size:13px}
+.divider{height:0.5px;background:var(--color-border-tertiary);margin:1.5rem 0}
+</style>
+
+<div class="page">
+  <div class="topbar">
+    <h1><i class="ti ti-building" aria-hidden="true" style="font-size:16px;vertical-align:-2px;margin-right:6px"></i>Conjuntura habitacional</h1>
+    <span id="last-updated">Carregando dados da API…</span>
+  </div>
+
+  <div class="filters">
+    <label>Empresa</label>
+    <select id="f-empresa">
+      <option value="">Todas</option>
+      <option value="MRV">MRV</option>
+      <option value="CURY">CURY</option>
+      <option value="TENDA">TENDA</option>
+      <option value="DIRECIONAL">DIRECIONAL</option>
+    </select>
+    <label style="margin-left:8px">Ano</label>
+    <select id="f-ano">
+      <option value="">Todos</option>
+      <option value="2024">2024</option>
+      <option value="2025">2025</option>
+      <option value="2026">2026</option>
+    </select>
+    <label style="margin-left:8px">Trimestre</label>
+    <select id="f-trimestre">
+      <option value="">Todos</option>
+      <option value="1">1T</option>
+      <option value="2">2T</option>
+      <option value="3">3T</option>
+      <option value="4">4T</option>
+    </select>
+    <button onclick="applyFilters()" style="margin-left:4px"><i class="ti ti-filter" aria-hidden="true"></i> Filtrar</button>
+    <button onclick="clearFilters()">Limpar</button>
+  </div>
+
+  <p class="section-title">Dados operacionais</p>
+  <div id="dados-table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Empresa</th>
+          <th>Período</th>
+          <th class="num">Vendas líquidas (R$ mi)</th>
+          <th class="num">Lançamentos (R$ mi)</th>
+          <th>Linhagem</th>
+        </tr>
+      </thead>
+      <tbody id="dados-tbody">
+        <tr><td colspan="5" class="empty">Carregando…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="divider"></div>
+
+  <p class="section-title"><i class="ti ti-database" aria-hidden="true" style="font-size:13px;vertical-align:-1px;margin-right:4px"></i>Status do pipeline — arquivos processados</p>
+  <div class="pipeline-table" id="pipeline-table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Arquivo (PDF)</th>
+          <th>Hash SHA-256</th>
+          <th>Processado em</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="pipeline-tbody">
+        <tr><td colspan="4" class="empty">Carregando…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const API = 'http://localhost:8000';
+
+const MOCK_DADOS = [
+  {empresa:'MRV',periodo_reportado:'3T25',ano:2025,trimestre:3,dados:{vendas_liquidas_r_milhoes:2445.0,lancamentos_r_milhoes:2355.0},source_file:'Earnings_Release_3T25.pdf',source_hash:'a1b2c3d4'},
+  {empresa:'CURY',periodo_reportado:'3T25',ano:2025,trimestre:3,dados:{vendas_liquidas_r_milhoes:1827.0,lancamentos_r_milhoes:1986.4},source_file:'Apresentao_de_Resultados_3T25.pdf',source_hash:'e5f6a7b8'},
+  {empresa:'TENDA',periodo_reportado:'3T25',ano:2025,trimestre:3,dados:{vendas_liquidas_r_milhoes:1232.7,lancamentos_r_milhoes:1562.9},source_file:'Press-release-Tenda-2025-09-30.pdf',source_hash:'c9d0e1f2'},
+  {empresa:'MRV',periodo_reportado:'2T25',ano:2025,trimestre:2,dados:{vendas_liquidas_r_milhoes:2210.0,lancamentos_r_milhoes:2100.0},source_file:'Earnings_Release_2T25.pdf',source_hash:'ab12cd34'},
+  {empresa:'CURY',periodo_reportado:'2T25',ano:2025,trimestre:2,dados:{vendas_liquidas_r_milhoes:1650.0,lancamentos_r_milhoes:1780.0},source_file:'Apresentao_de_Resultados_2T25.pdf',source_hash:'ef56gh78'},
+];
+
+const MOCK_PIPELINE = [
+  {filename:'Earnings_Release_3T25.pdf',hash:'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6',processed_at:'2025-10-14 09:12:34'},
+  {filename:'Apresentao_de_Resultados_3T25.pdf',hash:'e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0',processed_at:'2025-10-14 09-13:01'},
+  {filename:'Press-release-Tenda-2025-09-30.pdf',hash:'c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4',processed_at:'2025-10-14 09:13:48'},
+  {filename:'Earnings_Release_2T25.pdf',hash:'ab12cd34ef56gh78ij90kl12mn34op56',processed_at:'2025-07-18 11:04:22'},
+  {filename:'Apresentao_de_Resultados_2T25.pdf',hash:'ef56gh78ij90kl12mn34op56qr78st90',processed_at:'2025-07-18 11:05:10'},
+];
+
+let allDados = [];
+let allPipeline = [];
+
+async function loadData(){
+  try{
+    const [empRes,pipRes] = await Promise.all([
+      fetch(`${API}/api/conjuntura/empresas`),
+      fetch(`${API}/api/pipeline/status`)
+    ]);
+    if(!empRes.ok) throw new Error('api offline');
+    const empresas = await empRes.json();
+    const empresaDetails = await Promise.all(
+      empresas.map(e=>fetch(`${API}/api/conjuntura?empresa=${e.empresa}&ano=${e.ano}&trimestre=${e.trimestre}`).then(r=>r.json()))
+    );
+    allDados = empresaDetails;
+    allPipeline = pipRes.ok ? await pipRes.json() : MOCK_PIPELINE;
+  } catch(e){
+    allDados = MOCK_DADOS;
+    allPipeline = MOCK_PIPELINE;
+  }
+  renderDados(allDados);
+  renderPipeline(allPipeline);
+  document.getElementById('last-updated').textContent = 'Atualizado em ' + new Date().toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+
+function renderDados(rows){
+  const tbody = document.getElementById('dados-tbody');
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="5" class="empty">Nenhum dado encontrado para os filtros selecionados.</td></tr>';return;}
+  tbody.innerHTML = rows.map(r=>{
+    const v = r.dados?.vendas_liquidas_r_milhoes;
+    const l = r.dados?.lancamentos_r_milhoes;
+    const filename = r.source_file ? r.source_file.split('/').pop() : '—';
+    return `<tr>
+      <td><strong>${r.empresa}</strong></td>
+      <td>${r.periodo_reportado}</td>
+      <td class="${v!=null?'num':'null'}">${v!=null?v.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}):'—'}</td>
+      <td class="${l!=null?'num':'null'}">${l!=null?l.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}):'—'}</td>
+      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--font-mono);font-size:11px;color:var(--color-text-secondary)" title="${r.source_file||''}">${filename}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderPipeline(rows){
+  const tbody = document.getElementById('pipeline-tbody');
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="4" class="empty">Nenhum arquivo processado ainda.</td></tr>';return;}
+  tbody.innerHTML = rows.map(r=>`<tr>
+    <td class="filename" title="${r.filename}">${r.filename}</td>
+    <td class="hash">${r.hash.slice(0,16)}…</td>
+    <td>${r.processed_at||'—'}</td>
+    <td><span class="badge badge-ok"><i class="ti ti-check" aria-hidden="true" style="font-size:11px;vertical-align:-1px;margin-right:3px"></i>processado</span></td>
+  </tr>`).join('');
+}
+
+function applyFilters(){
+  const emp = document.getElementById('f-empresa').value;
+  const ano = document.getElementById('f-ano').value;
+  const tri = document.getElementById('f-trimestre').value;
+  let filtered = allDados;
+  if(emp) filtered = filtered.filter(r=>r.empresa===emp);
+  if(ano) filtered = filtered.filter(r=>r.ano===parseInt(ano));
+  if(tri) filtered = filtered.filter(r=>r.trimestre===parseInt(tri));
+  renderDados(filtered);
+}
+
+function clearFilters(){
+  document.getElementById('f-empresa').value='';
+  document.getElementById('f-ano').value='';
+  document.getElementById('f-trimestre').value='';
+  renderDados(allDados);
+}
+
+loadData();
+</script>
